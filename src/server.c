@@ -21,8 +21,8 @@
 #define MAX_CLIENTS 10000
 #define POLL_TO 60000
 
-#include <topology.h>
-#include <server.h>
+#include "topology.h"
+#include "server.h"
 
 #include <poll.h>
 #include <stdlib.h>

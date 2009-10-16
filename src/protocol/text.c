@@ -19,7 +19,7 @@
  
 #define LINE_MAX_LEN 2048
 #include "../topology.h"
-#include <server.h>
+#include "../server.h"
 #include <unistd.h>
 #include <string.h>
 
