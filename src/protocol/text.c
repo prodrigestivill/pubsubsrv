@@ -1,17 +1,20 @@
+/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
 /*
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
+ * text.c
+ * Copyright (C) Pau Rodriguez 2009 <prodrigestivill@gmail.com>
+ * 
+ * text.c is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Library General Public License for more details.
+ * text.c is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ * See the GNU General Public License for more details.
  * 
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor Boston, MA 02110-1301,  USA
+ * You should have received a copy of the GNU General Public License along
+ * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
 #define LINE_MAX_LEN 2048
@@ -45,7 +48,7 @@ void protocol_text_input(struct client *from, char buf[], int len){
 			}
             //DATA
 		    if (len > 3 && strncmp("DATA", buf, 4)==0){
-				r = write(from->connection, "354 Input/output start now\r\n", 28);
+				r = write(from->connection, "354 End data with <CR><LF>.<CR><LF>\r\n", 37);
 				from->state = 1;
 				break;
 			}
