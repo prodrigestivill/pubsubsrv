@@ -1,7 +1,8 @@
 CC?=gcc
+CFLAGS?=-g
 
 OBJ=main.o server.o topology.o
-PROTOCOL_OBJ=protocol/text.o
+PROTOCOL_OBJ=protocol/text.o protocol/irc.o
 PROGRAM=pubsubsrv
 
 all: ${OBJ} ${PROTOCOL_OBJ}

@@ -20,11 +20,16 @@
 #ifndef _TOPOLOGY_H
 #define _TOPOLOGY_H
 #include "list.h"
+#include <netinet/in.h>
+
+static struct list_head clients;
+static struct list_head topics;
 
 struct topic {
         struct list_head item;
         struct list_head publishers, subscribers;
         char *name;
+		void *data;
 };
 
 struct publisher{
@@ -46,8 +51,10 @@ struct subscriber{
 struct client{
         struct list_head item;
         int connection;
-        int state;
+		struct sockaddr_in connection_addr;
         struct list_head publishers, subscribers;
+        int state;
+		void *data;
 };
 
 void topology();
@@ -61,6 +68,8 @@ void unsubscriber(struct subscriber *s);
 void unpublisher(struct publisher *p);
 void remove_client(struct client *c);
 void remove_client_fd(int s);
+
+void (*free_client_data)(struct client*); //client
 
 #define item_list_for_each(pos, head) \
 	list_for_each_entry(pos, head, item)

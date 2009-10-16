@@ -83,7 +83,7 @@ void protocol_text_input(struct client *from, char buf[], int len){
     }
 }
  
-int procotol_text_read(struct client *c){
+int protocol_text_read(struct client *c){
     char buf[LINE_MAX_LEN];
 	int i, l, n, len;
 	len = read(c->connection, buf, LINE_MAX_LEN);
@@ -123,7 +123,7 @@ int procotol_text_read(struct client *c){
 	*/
 }
 
-int procotol_text_write
+int protocol_text_write
 	(struct client *from, struct client *to, char buf[], int len){
 	int r;
 	if (from!=to && to->state>0){
@@ -136,14 +136,18 @@ int procotol_text_write
 		return 0;
 }
 
-struct client *procotol_text_newclient(int fd){
+struct client *protocol_text_newclient(int fd){
 	int r;
 	r = write(fd, "220 PubSub Server\r\n", 19);
 	return get_client(fd);
 }
 
+void protocol_text_free_client_data(struct client* c){
+}
+
 void protocol_text(){
-    server_read = procotol_text_read;
-	server_write = procotol_text_write;
-	server_newclient = procotol_text_newclient;
+    server_read = protocol_text_read;
+	server_write = protocol_text_write;
+	server_newclient = protocol_text_newclient;
+	free_client_data = protocol_text_free_client_data;
 }

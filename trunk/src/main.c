@@ -29,8 +29,8 @@
 
 void usage (char *_name){
   fprintf(stderr, "\nUsage: %s [options]\n", _name);
-  fprintf(stderr, "  -p<port>        : TCP port number\n");
-  fprintf(stderr, "  -t<protocol>    : Protocol (text, ...)\n");
+  fprintf(stderr, "  -l<port>        : Listen TCP port number\n");
+  fprintf(stderr, "  -P<protocol>    : Protocol (text, irc, ...)\n");
   fprintf(stderr, "  -h              : Show this help message\n");
 }
 
@@ -41,15 +41,18 @@ int main(int argc, char *argv[])
 	int sockfd, opt, port=0, protocol=0;
 	programName = argv[0];
 	topology();
-	while ((opt = getopt(argc, argv, "p:t")) > 0) {
+	while ((opt = getopt(argc, argv, "l:P:")) > 0) {
 		switch (opt) {
-		   case 'p':
+		   case 'l':
 				port = atoi(optarg);
 			break;
-		   case 't':
-				if (strcmp (optarg, "text")){
+		   case 'P':
+				if (strcmp(optarg, "text")==0){
 					protocol=1;
 					protocol_text();
+				}else if (strcmp(optarg, "irc")==0){
+					protocol=2;
+					protocol_irc();
 				}else{
 					usage(programName);
 					return 0;
