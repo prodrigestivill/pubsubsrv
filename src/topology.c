@@ -22,9 +22,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-static struct list_head clients;
-static struct list_head topics;
-
 void topology(){
 	INIT_LIST_HEAD(&clients);
 	INIT_LIST_HEAD(&topics);
@@ -122,6 +119,7 @@ void remove_client(struct client *c){
 	client_list_for_each(s, &c->subscribers){
 		unsubscriber(s);
 	}
+	free_client_data(c);
 	list_del(&c->item);
 }
 
