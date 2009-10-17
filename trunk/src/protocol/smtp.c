@@ -105,6 +105,22 @@ int protocol_smtp_read(struct client *c){
 			c->state = 1;
 	}
     return n;
+   	//TODO permit char-by-char commands?.
+    /*
+    n = 0;
+    len = 0;
+    do{
+        c = &buf[len++];
+        r = read(c->connection, c, 1);
+        if (r==1 && *c == '\n'){
+            protocol_smtp_input(c, buf, len);
+            n++;
+            len = 0;
+        }
+    }while(r>0 && len<LINE_MAX_LEN);
+    if (r<0)
+        return -1;
+	*/
 }
 
 int protocol_smtp_write

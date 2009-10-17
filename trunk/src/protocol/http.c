@@ -120,24 +120,20 @@ void protocol_http_input(struct client *from, char buf[], int len){
  
 int protocol_http_read(struct client *c){
     char buf[LINE_MAX_LEN];
-	int i, l, n, len;
+	int i, l, len;
 	len = read(c->connection, buf, LINE_MAX_LEN);
 	if (c->state>=200)
 		protocol_http_input(c, buf, len);
 	else{
-		n = 0;
 		l = 0;
 		for (i=0; i<len; i++){
 			if (buf[i] == '\n'){
 				protocol_http_input(c, &buf[l], i-l+1);
 				l=i+1;
-				n++;
 			}
 		}
-		if (l<len){
+		if (l<len)
 			protocol_http_input(c, &buf[l], len-l);
-			n++;
-		}
 	}
 	return 1;
 }
