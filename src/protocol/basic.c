@@ -1,14 +1,14 @@
 /* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
 /*
- * text.c
+ * basic.c
  * Copyright (C) Pau Rodriguez 2009 <prodrigestivill@gmail.com>
  * 
- * text.c is free software: you can redistribute it and/or modify it
+ * basic.c is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  * 
- * text.c is distributed in the hope that it will be useful, but
+ * basic.c is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
  * See the GNU General Public License for more details.
@@ -17,13 +17,13 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
  
-#define LINE_MAX_LEN 2048
+#define LINE_MAX_LEN 4096
 #include "../topology.h"
 #include "../server.h"
 #include <unistd.h>
 #include <string.h>
 
-void protocol_text_input(struct client *from, char buf[], int len){
+void protocol_basic_input(struct client *from, char buf[], int len){
 	struct subscriber *s;
     struct publisher *p;
 	int r;
@@ -63,43 +63,32 @@ void protocol_text_input(struct client *from, char buf[], int len){
     }
 }
  
-int protocol_text_read(struct client *c){
+int protocol_basic_read(struct client *c){
     char buf[LINE_MAX_LEN];
 	int i, l, n, len;
 	len = read(c->connection, buf, LINE_MAX_LEN);
-	n = 0;
-	l = 0;
-	for (i=0; i<len; i++){
-		if (buf[i] == '\n'){
-			protocol_text_input(c, &buf[l], i-l+1);
-			l=i+1;
+	if (c->state>0){
+		protocol_basic_input(c, buf, len);
+		n = 1;
+	}else{
+		n = 0;
+		l = 0;
+		for (i=0; i<len; i++){
+			if (buf[i] == '\n'){
+				protocol_basic_input(c, &buf[l], i-l+1);
+				l=i+1;
+				n++;
+			}
+		}
+		if (l<len){
+			protocol_basic_input(c, &buf[l], len-l);
 			n++;
 		}
 	}
-	if (l<len){
-		protocol_text_input(c, &buf[l], len-l);
-		n++;
-	}
     return n;
-   	//TODO permit char-by-char commands?.
-    /*
-    n = 0;
-    len = 0;
-    do{
-        c = &buf[len++];
-        r = read(c->connection, c, 1);
-        if (r==1 && *c == '\n'){
-            protocol_text_input(c, buf, len);
-            n++;
-            len = 0;
-        }
-    }while(r>0 && len<LINE_MAX_LEN);
-    if (r<0)
-        return -1;
-	*/
 }
 
-int protocol_text_write
+int protocol_basic_write
 	(struct client *from, struct client *to, char buf[], int len){
 	int r;
 	if (from!=to && to->state>0){
@@ -112,24 +101,24 @@ int protocol_text_write
 		return 0;
 }
 
-struct client *protocol_text_newclient(int fd){
+struct client *protocol_basic_newclient(int fd){
 	return get_client(fd);
 }
 
-void protocol_text_endclient(struct client* c){
+void protocol_basic_endclient(struct client* c){
 }
 
-void protocol_text_free_client_data(struct client* c){
+void protocol_basic_free_client_data(struct client* c){
 }
 
-void protocol_text_free_topic_data(struct topic* t){
+void protocol_basic_free_topic_data(struct topic* t){
 }
 
-void protocol_text(){
-    server_read = protocol_text_read;
-	server_write = protocol_text_write;
-	server_newclient = protocol_text_newclient;
-	server_endclient = protocol_text_endclient;
-	free_client_data = protocol_text_free_client_data;
-	free_topic_data = protocol_text_free_topic_data;
+void protocol_basic(){
+    server_read = protocol_basic_read;
+	server_write = protocol_basic_write;
+	server_newclient = protocol_basic_newclient;
+	server_endclient = protocol_basic_endclient;
+	free_client_data = protocol_basic_free_client_data;
+	free_topic_data = protocol_basic_free_topic_data;
 }

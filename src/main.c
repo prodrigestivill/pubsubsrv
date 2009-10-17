@@ -30,7 +30,7 @@
 void usage (char *_name){
   fprintf(stderr, "\nUsage: %s [options]\n", _name);
   fprintf(stderr, "  -l<port>        : Listen TCP port number\n");
-  fprintf(stderr, "  -P<protocol>    : Protocol (text, http, smtp, irc, ...)\n");
+  fprintf(stderr, "  -P<protocol>    : Protocol (basic, http, smtp, irc, ...)\n");
   fprintf(stderr, "  -h              : Show this help message\n");
 }
 
@@ -47,9 +47,9 @@ int main(int argc, char *argv[])
 				port = atoi(optarg);
 			break;
 		   case 'P':
-				if (strcmp(optarg, "text")==0){
+				if (strcmp(optarg, "basic")==0){
 					protocol=1;
-					protocol_text();
+					protocol_basic();
 				}else if (strcmp(optarg, "http")==0){
 					protocol=2;
 					protocol_http();
@@ -74,7 +74,7 @@ int main(int argc, char *argv[])
 		return 0;
 	}	
 	if (protocol==0)
-		protocol_text();
+		protocol_basic();
 	//Start
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0){
