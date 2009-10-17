@@ -30,7 +30,7 @@
 void usage (char *_name){
   fprintf(stderr, "\nUsage: %s [options]\n", _name);
   fprintf(stderr, "  -l<port>        : Listen TCP port number\n");
-  fprintf(stderr, "  -P<protocol>    : Protocol (text, irc, ...)\n");
+  fprintf(stderr, "  -P<protocol>    : Protocol (text, http, irc, ...)\n");
   fprintf(stderr, "  -h              : Show this help message\n");
 }
 
@@ -50,8 +50,11 @@ int main(int argc, char *argv[])
 				if (strcmp(optarg, "text")==0){
 					protocol=1;
 					protocol_text();
-				}else if (strcmp(optarg, "irc")==0){
+				}else if (strcmp(optarg, "http")==0){
 					protocol=2;
+					protocol_http();
+				}else if (strcmp(optarg, "irc")==0){
+					protocol=3;
 					protocol_irc();
 				}else{
 					usage(programName);
@@ -72,7 +75,7 @@ int main(int argc, char *argv[])
 	//Start
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd < 0){
-		fprintf(stderr, "ERROR opening socket");
+		fprintf(stderr, "ERROR opening socket\n");
 		return 1;
 	}
 	bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -80,7 +83,7 @@ int main(int argc, char *argv[])
 	serv_addr.sin_addr.s_addr = INADDR_ANY;
 	serv_addr.sin_port = htons(port);
 	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0){
-		fprintf(stderr, "ERROR on binding");
+		fprintf(stderr, "ERROR on binding\n");
 		return 1;
 	}
 	server(sockfd);

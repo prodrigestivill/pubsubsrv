@@ -61,6 +61,10 @@ void protocol_irc_input(struct client *from, char buf[], int len){
 	//Remove tailing '\n'
 	while(len>1 && (buf[len-1]=='\n' || buf[len-1]=='\r'))
 		len--;
+	if (len<RECV_MAX_LEN)
+		buf[len]='\0';
+	else
+		buf[RECV_MAX_LEN-1]='\0';
     if (len > 6 && strncmp("JOIN #", buf, 6)==0){
 		t = get_topic(buf+6, len-6);
 		s = subscriber(from, t);
@@ -71,12 +75,8 @@ void protocol_irc_input(struct client *from, char buf[], int len){
 		return;
 	}
 	if (len > 8 && strncmp("PRIVMSG ", buf, 8)==0){
-		if (len<RECV_MAX_LEN)
-			buf[len]='\0';
-		else
-			buf[RECV_MAX_LEN-1]='\0';
 		snprintf(buf2, SEND_MAX_LEN, ":%s!n=%s@%s %s\r\n",
-						((struct protocol_irc_client_data*)from->data)->user,
+						((struct protocol_irc_client_data*)from->data)->nick,
 						((struct protocol_irc_client_data*)from->data)->user,
 						((struct protocol_irc_client_data*)from->data)->host,
 						 buf);
@@ -95,17 +95,26 @@ void protocol_irc_input(struct client *from, char buf[], int len){
 		return;
 	}
     if (len > 4 && strncmp("PING ", buf, 5)==0){
-		if (len<RECV_MAX_LEN)
-			buf[len]='\0';
-		else
-			buf[RECV_MAX_LEN-1]='\0';
 		snprintf(buf2, SEND_MAX_LEN, ":server PONG server : %s\r\n", &buf[5]);
 		r = write(from->connection, buf2, strlen(buf2));
 		return;
 	}
     if (len > 5 && strncmp("NICK ", buf, 5)==0){
-		memcpy(((struct protocol_irc_client_data*)from->data)->user, &buf[5], len-5);
-		((struct protocol_irc_client_data*)from->data)->user[len-5]='\0';
+		if (len-4>NICK_MAX_LEN)
+			len=NICK_MAX_LEN+4;
+		memcpy(((struct protocol_irc_client_data*)from->data)->nick, &buf[5], len-5);
+		((struct protocol_irc_client_data*)from->data)->nick[len-5]='\0';
+		from->state=1;
+		return;
+	}
+    if (len > 5 && strncmp("USER ", buf, 5)==0){
+		for (r=6;r<len;r++)
+			if (buf[r]==' ')
+				break;
+		if (r-4>NICK_MAX_LEN)
+			r=NICK_MAX_LEN+4;
+		memcpy(((struct protocol_irc_client_data*)from->data)->user, &buf[5], r-5);
+		((struct protocol_irc_client_data*)from->data)->user[r-5]='\0';
 		from->state=1;
 		return;
 	}
@@ -116,7 +125,7 @@ void protocol_irc_input(struct client *from, char buf[], int len){
 		server_close(from->connection);
 		return;
 	}
-	r = write(from->connection, "502 Command not implemented\r\n", 29);
+	r = write(from->connection, ": Command not implemented\r\n", 27);
 	*/
 }
  
@@ -129,8 +138,6 @@ int protocol_irc_read(struct client *c){
 	for (i=0; i<len; i++){
 		if (buf[i] == '\n'){
 			protocol_irc_input(c, &buf[l], i-l+1);
-			if (c->state==1)
-				c->state = 2;
 			l=i+1;
 			n++;
 		}
@@ -138,8 +145,6 @@ int protocol_irc_read(struct client *c){
 	if (l<len){
 		protocol_irc_input(c, &buf[l], len-l);
 		n++;
-		if (c->state==2)
-			c->state = 1;
 	}
     return n;
 }
@@ -160,19 +165,27 @@ int protocol_irc_write
 struct client *protocol_irc_newclient(int fd){
 	struct client *c = get_client(fd);
 	c->data=malloc(sizeof(struct protocol_irc_client_data));
-	((struct protocol_irc_client_data*)c->data)->nick[0]='\0'; 
+	((struct protocol_irc_client_data*)c->data)->nick[0]='\0';
 	((struct protocol_irc_client_data*)c->data)->user[0]='\0';
 	((struct protocol_irc_client_data*)c->data)->host[0]='\0';
 	return c;
+}
+
+void protocol_irc_endclient(struct client* c){
 }
 
 void protocol_irc_free_client_data(struct client* c){
 	free(c->data);
 }
 
+void protocol_irc_free_topic_data(struct topic* t){
+}
+
 void protocol_irc(){
     server_read = protocol_irc_read;
 	server_write = protocol_irc_write;
 	server_newclient = protocol_irc_newclient;
+	server_endclient = protocol_irc_endclient;
 	free_client_data = protocol_irc_free_client_data;
+	free_topic_data = protocol_irc_free_topic_data;
 }

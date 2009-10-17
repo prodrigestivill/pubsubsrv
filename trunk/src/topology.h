@@ -22,8 +22,8 @@
 #include "list.h"
 #include <netinet/in.h>
 
-static struct list_head clients;
-static struct list_head topics;
+struct list_head clients;
+struct list_head topics;
 
 struct topic {
         struct list_head item;
@@ -61,7 +61,9 @@ void topology();
 struct client *add_client(int s);
 struct topic *add_topic(char *name, int len);
 struct client *get_client(int s);
+struct client *get_existent_client(int s);
 struct topic *get_topic(char *name, int len);
+struct topic *get_existent_topic(char *name, int len);
 struct subscriber *subscriber(struct client *c, struct topic *t);
 struct publisher *publisher(struct client *c, struct topic *t);
 void unsubscriber(struct subscriber *s);
@@ -70,6 +72,7 @@ void remove_client(struct client *c);
 void remove_client_fd(int s);
 
 void (*free_client_data)(struct client*); //client
+void (*free_topic_data)(struct topic*); //toppic
 
 #define item_list_for_each(pos, head) \
 	list_for_each_entry(pos, head, item)

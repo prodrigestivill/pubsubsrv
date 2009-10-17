@@ -66,6 +66,15 @@ struct topic *add_topic(char *name, int len){
         return t;
 }
 
+struct topic *get_existent_topic(char *name, int len){
+        struct topic *t;
+        item_list_for_each(t, &topics){
+                if (strncmp(t->name, name, len)==0)
+                        return t;
+        }
+        return 0;
+}
+
 struct topic *get_topic(char *name, int len){
         struct topic *t;
         item_list_for_each(t, &topics){
@@ -110,21 +119,28 @@ void unpublisher(struct publisher *p){
 }
 
 void remove_client(struct client *c){
-	struct publisher *p;
-	struct subscriber *s;
+	struct list_head *pos, *n;
 	c->state=0;
-    client_list_for_each(p, &c->publishers){
-		unpublisher(p);
+    list_for_each_safe(pos, n, &c->publishers){
+		unpublisher(list_entry(pos, struct publisher, clientitem));
 	}
-	client_list_for_each(s, &c->subscribers){
-		unsubscriber(s);
+	list_for_each_safe(pos, n, &c->subscribers){
+		unsubscriber(list_entry(pos, struct subscriber, clientitem));
 	}
 	free_client_data(c);
 	list_del(&c->item);
+	free(c);
 }
 
 void remove_client_fd(int s){
 	struct client *c = get_existent_client(s);
 	if (c!=0)
 		remove_client(c);
+}
+
+void remove_topic(struct topic *t){
+	free_topic_data(t);
+	list_del(&t->item);
+	free(t->name);
+	free(t);
 }
