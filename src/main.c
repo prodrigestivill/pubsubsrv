@@ -30,7 +30,7 @@
 void usage (char *_name){
   fprintf(stderr, "\nUsage: %s [options]\n", _name);
   fprintf(stderr, "  -l<port>        : Listen TCP port number\n");
-  fprintf(stderr, "  -P<protocol>    : Protocol (text, http, irc, ...)\n");
+  fprintf(stderr, "  -P<protocol>    : Protocol (text, http, smtp, irc, ...)\n");
   fprintf(stderr, "  -h              : Show this help message\n");
 }
 
@@ -53,8 +53,11 @@ int main(int argc, char *argv[])
 				}else if (strcmp(optarg, "http")==0){
 					protocol=2;
 					protocol_http();
-				}else if (strcmp(optarg, "irc")==0){
+				}else if (strcmp(optarg, "smtp")==0){
 					protocol=3;
+					protocol_smtp();
+				}else if (strcmp(optarg, "irc")==0){
+					protocol=4;
 					protocol_irc();
 				}else{
 					usage(programName);
