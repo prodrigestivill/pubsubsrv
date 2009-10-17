@@ -24,13 +24,17 @@
 #include "topology.h"
 #include "server.h"
 
-#include <poll.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
+
+#include <poll.h>
+#ifndef POLLRDHUP
+#define POLLRDHUP 0x2000
+#endif
 
 int pollfdslen, pollfdsmax;
 struct pollfd *pollfds;
@@ -73,7 +77,7 @@ void server(int sockfd){
 				}
 			    pollfds[i].fd =
 					accept(sockfd, (struct sockaddr *) &cliaddr, &cliaddrlen);
-				pollfds[i].events = POLLIN;
+				pollfds[i].events = POLLIN|POLLRDHUP;
 				pollfds[i].revents = 0;
 				pollclients[i] = server_newclient(pollfds[i].fd);
 				if (pollclients[i]==0){
@@ -87,17 +91,16 @@ void server(int sockfd){
 			}
 			pollfds[0].revents = 0;
 			for (i=1; i<pollfdsmax && r>0; i++){
-				if (pollfds[i].revents!=0){
-					if (( pollfds[i].revents & POLLHUP ||
-					      pollfds[i].revents & POLLERR) &&
-						!(pollfds[i].revents & POLLNVAL)){
+				if (pollfds[i].fd!=-1 && pollfds[i].revents!=0){
+					if ( pollfds[i].revents & POLLHUP ||
+						 pollfds[i].revents & POLLRDHUP ||
+					     pollfds[i].revents & POLLERR || 
+						 pollfds[i].revents & POLLNVAL )
+					{
+						server_endclient(pollclients[i]);
 						remove_client_fd(pollfds[i].fd);
 						server_close(pollfds[i].fd);
 						pollfds[i].fd = -1;
-						pollfdslen--;
-					}else if (pollfds[i].revents & POLLNVAL){
-						remove_client_fd(pollfds[i].fd);
-						pollfds[i].fd = -1;	
 						pollfdslen--;
 					}else
 						server_read(pollclients[i]);

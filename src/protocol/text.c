@@ -142,12 +142,20 @@ struct client *protocol_text_newclient(int fd){
 	return get_client(fd);
 }
 
+void protocol_text_endclient(struct client* c){
+}
+
 void protocol_text_free_client_data(struct client* c){
+}
+
+void protocol_text_free_topic_data(struct topic* t){
 }
 
 void protocol_text(){
     server_read = protocol_text_read;
 	server_write = protocol_text_write;
 	server_newclient = protocol_text_newclient;
+	server_endclient = protocol_text_endclient;
 	free_client_data = protocol_text_free_client_data;
+	free_topic_data = protocol_text_free_topic_data;
 }
