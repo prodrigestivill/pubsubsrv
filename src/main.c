@@ -30,7 +30,9 @@
 void usage (char *_name){
   fprintf(stderr, "\nUsage: %s [options]\n", _name);
   fprintf(stderr, "  -l<port>        : Listen TCP port number\n");
-  fprintf(stderr, "  -P<protocol>    : Protocol (basic, http, smtp, irc, ...)\n");
+  fprintf(stderr, "  -P<protocol>    : Protocols\n");
+  fprintf(stderr, "     basic, textline,\n");
+  fprintf(stderr, "     http, smtp, irc, ...\n");
   fprintf(stderr, "  -h              : Show this help message\n");
 }
 
@@ -41,7 +43,7 @@ int main(int argc, char *argv[])
 	int sockfd, opt, port=0, protocol=0;
 	programName = argv[0];
 	topology();
-	while ((opt = getopt(argc, argv, "l:P:")) > 0) {
+	while ((opt = getopt(argc, argv, "l:P:h")) > 0) {
 		switch (opt) {
 		   case 'l':
 				port = atoi(optarg);
@@ -50,14 +52,17 @@ int main(int argc, char *argv[])
 				if (strcmp(optarg, "basic")==0){
 					protocol=1;
 					protocol_basic();
-				}else if (strcmp(optarg, "http")==0){
+				}else if (strcmp(optarg, "textline")==0){
 					protocol=2;
+					protocol_textline();
+				}else if (strcmp(optarg, "http")==0){
+					protocol=10;
 					protocol_http();
 				}else if (strcmp(optarg, "smtp")==0){
-					protocol=3;
+					protocol=11;
 					protocol_smtp();
 				}else if (strcmp(optarg, "irc")==0){
-					protocol=4;
+					protocol=12;
 					protocol_irc();
 				}else{
 					usage(programName);
