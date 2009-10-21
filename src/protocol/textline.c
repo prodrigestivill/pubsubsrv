@@ -1,4 +1,4 @@
-/* -*- Mode: C; indent-tabs-mode: t; c-textline-offset: 4; tab-width: 4 -*- */
+/* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * textline.c
  * Copyright (C) Pau Rodriguez 2009 <prodrigestivill@gmail.com>
@@ -25,7 +25,8 @@
 #include <unistd.h>
 #include <string.h>
 
-struct topic *protocol_textline_get_topic(struct client *from, char *name, int len)
+struct topic *protocol_textline_get_topic(struct client *from, char *name,
+                                          int len)
 {
   struct publisher *p;
   client_list_for_each(p, &from->publishers)
