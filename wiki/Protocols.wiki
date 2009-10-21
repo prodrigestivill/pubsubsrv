@@ -3,7 +3,8 @@
 
 = Basic =
 This protocol is compatible with binary streams. But this protocol don't permit the client to know who send neither the destination of the messages.
-Commands: SUBSCRIBE, PUBLISH, START, QUIT
+
+*Commands:* SUBSCRIBE, PUBLISH, START, QUIT
 
 Example:
 {{{
@@ -21,8 +22,10 @@ Protocol options:
 
 
 = Textline =
-Similar to Basic protocol, but oriented to lines of text.
-Commands: SUBSCRIBE, PUBLISH, QUIT
+Similar to Basic protocol, but oriented to lines of text. This protocol permit the client to know the destination of the messages.
+
+*Commands:* SUBSCRIBE, PUBLISH, QUIT
+
 Example:
 {{{
 C: SUBSCRIBE example1
