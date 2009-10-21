@@ -27,9 +27,11 @@
 #include <string.h>
 
 int protocol_http_read_size;
+int protocol_http_allways_chunked;
 
 struct protocol_http_topic_data
 {
+  int chunked;
   char mimetype[MIME_MAX_SIZE];
 };
 
@@ -63,10 +65,18 @@ void protocol_http_input(struct client *from, char buf[], int len)
               {
                 s = subscriber(from, t);
                 s->state = 1;
-                snprintf(buf2, BUF_MAX_SIZE,
-                         "HTTP/1.0 200 OK\r\nServer: PubSub Server\r\nConnection: close\r\nContent-Type:%s\r\n\r\n",
-                         ((struct protocol_http_topic_data *) t->data)->
-                         mimetype);
+                if (protocol_http_allways_chunked == 1
+                    || ((struct protocol_http_topic_data *) t->
+                        data)->chunked == 1)
+                  snprintf(buf2, BUF_MAX_SIZE,
+                           "HTTP/1.1 200 OK\r\nServer: PubSub Server\r\nConnection: close\r\nTransfer-Encoding: chunked\r\nContent-Type:%s\r\n\r\n",
+                           ((struct protocol_http_topic_data *) t->
+                            data)->mimetype);
+                else
+                  snprintf(buf2, BUF_MAX_SIZE,
+                           "HTTP/1.0 200 OK\r\nServer: PubSub Server\r\nConnection: close\r\nContent-Type:%s\r\n\r\n",
+                           ((struct protocol_http_topic_data *)
+                            t->data)->mimetype);
                 from->state = 2;
               }
             r = write(from->connection, buf2, strlen(buf2));
@@ -83,11 +93,11 @@ void protocol_http_input(struct client *from, char buf[], int len)
               {
                 t = add_topic(buf + 5, r - 5);
                 t->data = malloc(sizeof(struct protocol_http_topic_data));
+                ((struct protocol_http_topic_data *) t->data)->chunked = 0;
                 strcpy(((struct protocol_http_topic_data *) t->data)->
                        mimetype, " application/octet-stream");
               }
             p = publisher(from, t);
-            p->state = 1;
             from->state = 3;
             break;
           }
@@ -100,9 +110,14 @@ void protocol_http_input(struct client *from, char buf[], int len)
         break;
       case 2:                  //GET 200 OK: Final
         break;
-      case 3:                  //PUT: Pending of Mime-Type
+      case 3:                  //PUT: Pending of Headers
         if (len > 13 && strncmp("Content-Type:", buf, 13) == 0)
           {
+            client_list_for_each(p, &from->publishers)
+            {
+              t = p->topic;
+              break;
+            }
             if (len - 12 > MIME_MAX_SIZE)
               len = MIME_MAX_SIZE + 12;
             memcpy(((struct protocol_http_topic_data *) t->data)->mimetype,
@@ -111,9 +126,22 @@ void protocol_http_input(struct client *from, char buf[], int len)
                                                                     13] =
               '\0';
           }
+        else if (len > 25
+                 && strncmp("Transfer-Encoding: chunked", buf, 26) == 0)
+          {
+            client_list_for_each(p, &from->publishers)
+            {
+              ((struct protocol_http_topic_data *) p->topic->
+               data)->chunked = 1;
+            }
+          }
         else if (len == 0
                  || (len == 1 && (buf[0] == '\r' || buf[0] == '\n')))
           {
+            client_list_for_each(p, &from->publishers)
+            {
+              p->state = 1;
+            }
             from->state = 200;
             strcpy(buf2, "HTTP/1.0 100 Continue\r\n");
             r = write(from->connection, buf2, strlen(buf2));
@@ -129,15 +157,38 @@ void protocol_http_input(struct client *from, char buf[], int len)
           }
         break;
       case 200:                //PUT: Streaming
-        client_list_for_each(p, &from->publishers)
-        {
-          if (p->state > 0)
-            {
-              server_send(from, p->topic, buf, len);
-            }
-        }
+        protocol_http_stream(from, buf, len);
         break;
     }
+}
+
+void protocol_http_stream(struct client *from, char buf[], int len)
+{
+  int l = 0;
+  char buf2[protocol_http_read_size + 32];
+  struct publisher *p;
+  client_list_for_each(p, &from->publishers)
+  {
+    if (p->state > 0)
+      {
+        if (protocol_http_allways_chunked == 1
+            && ((struct protocol_http_topic_data *) p->topic->
+                data)->chunked == 0)
+          {
+            if (l == 0)
+              {
+                l = snprintf(buf2, 30, "%x\r\n", len);
+                memcpy(buf2 + l, buf, len);
+                l = l + len + 2;
+                buf2[l - 2] = '\r';
+                buf2[l - 1] = '\n';
+              }
+            server_send(from, p->topic, buf2, l);
+          }
+        else
+          server_send(from, p->topic, buf, len);
+      }
+  }
 }
 
 int protocol_http_read(struct client *c)
@@ -146,7 +197,7 @@ int protocol_http_read(struct client *c)
   int i, l, len;
   len = read(c->connection, buf, protocol_http_read_size);
   if (c->state >= 200)
-    protocol_http_input(c, buf, len);
+    protocol_http_stream(c, buf, len);
   else
     {
       l = 0;
@@ -223,17 +274,23 @@ void protocol_http(int argc, char *argv[])
 
   int opt;
   protocol_http_read_size = 4096;
-  while ((opt = getopt(argc, argv, "s:h")) > 0)
+  protocol_http_allways_chunked = 0;
+  while ((opt = getopt(argc, argv, "s:hc")) > 0)
     {
       switch (opt)
         {
           case 's':
             protocol_http_read_size = atoi(optarg);
             break;
+          case 'c':
+            protocol_http_allways_chunked = 1;
+            break;
           default:
             fprintf(stderr,
                     "\nHTTP protcol options: usage in [protocol options]\n");
             fprintf(stderr, "  -s<size>        : Read size\n");
+            fprintf(stderr,
+                    "  -c              : Force chunked transfer-encoding\n");
             fprintf(stderr,
                     "  -h              : Show this help message\n");
             exit(0);
