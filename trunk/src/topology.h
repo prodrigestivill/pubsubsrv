@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #ifndef _TOPOLOGY_H
 #define _TOPOLOGY_H
 #include "list.h"
@@ -25,36 +25,40 @@
 struct list_head clients;
 struct list_head topics;
 
-struct topic {
-        struct list_head item;
-        struct list_head publishers, subscribers;
-        char *name;
-		void *data;
+struct topic
+{
+  struct list_head item;
+  struct list_head publishers, subscribers;
+  char *name;
+  void *data;
 };
 
-struct publisher{
-        struct list_head clientitem;
-		struct list_head topicitem;
-        struct client *client;
-        struct topic *topic;
-        int state;
+struct publisher
+{
+  struct list_head clientitem;
+  struct list_head topicitem;
+  struct client *client;
+  struct topic *topic;
+  int state;
 };
 
-struct subscriber{
-        struct list_head clientitem;
-		struct list_head topicitem;
-        struct client *client;
-        struct topic *topic;
-        int state;
+struct subscriber
+{
+  struct list_head clientitem;
+  struct list_head topicitem;
+  struct client *client;
+  struct topic *topic;
+  int state;
 };
 
-struct client{
-        struct list_head item;
-        int connection;
-		struct sockaddr_in connection_addr;
-        struct list_head publishers, subscribers;
-        int state;
-		void *data;
+struct client
+{
+  struct list_head item;
+  int connection;
+  struct sockaddr_in connection_addr;
+  struct list_head publishers, subscribers;
+  int state;
+  void *data;
 };
 
 void topology();
@@ -71,8 +75,8 @@ void unpublisher(struct publisher *p);
 void remove_client(struct client *c);
 void remove_client_fd(int s);
 
-void (*free_client_data)(struct client*); //client
-void (*free_topic_data)(struct topic*); //toppic
+void (*free_client_data) (struct client *);     //client
+void (*free_topic_data) (struct topic *);       //toppic
 
 #define item_list_for_each(pos, head) \
 	list_for_each_entry(pos, head, item)
