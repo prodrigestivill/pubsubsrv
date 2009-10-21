@@ -142,7 +142,7 @@ int protocol_smtp_read(struct client *c)
 }
 
 int protocol_smtp_write
-  (struct client *from, struct client *to, char buf[], int len)
+  (struct topic *topicfrom, struct client *from, struct client *to, char buf[], int len)
 {
   int r;
   if (from != to && to->state > 0)

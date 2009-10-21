@@ -127,7 +127,7 @@ int protocol_textline_read(struct client *c)
 }
 
 int protocol_textline_write
-  (struct client *from, struct client *to, char buf[], int len)
+  (struct topic *topicfrom, struct client *from, struct client *to, char buf[], int len)
 {
   int r;
   if (from != to)

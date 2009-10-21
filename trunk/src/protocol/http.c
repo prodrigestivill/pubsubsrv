@@ -35,6 +35,35 @@ struct protocol_http_topic_data
   char mimetype[MIME_MAX_SIZE];
 };
 
+void protocol_http_stream(struct client *from, char buf[], int len)
+{
+  int l = 0;
+  char buf2[protocol_http_read_size + 32];
+  struct publisher *p;
+  client_list_for_each(p, &from->publishers)
+  {
+    if (p->state > 0)
+      {
+        if (protocol_http_allways_chunked == 1
+            && ((struct protocol_http_topic_data *) p->topic->
+                data)->chunked == 0)
+          {
+            if (l == 0)
+              {
+                l = snprintf(buf2, 30, "%x\r\n", len);
+                memcpy(buf2 + l, buf, len);
+                l = l + len + 2;
+                buf2[l - 2] = '\r';
+                buf2[l - 1] = '\n';
+              }
+            server_send(from, p->topic, buf2, l);
+          }
+        else
+          server_send(from, p->topic, buf, len);
+      }
+  }
+}
+
 void protocol_http_input(struct client *from, char buf[], int len)
 {
   char buf2[BUF_MAX_SIZE];
@@ -162,35 +191,6 @@ void protocol_http_input(struct client *from, char buf[], int len)
     }
 }
 
-void protocol_http_stream(struct client *from, char buf[], int len)
-{
-  int l = 0;
-  char buf2[protocol_http_read_size + 32];
-  struct publisher *p;
-  client_list_for_each(p, &from->publishers)
-  {
-    if (p->state > 0)
-      {
-        if (protocol_http_allways_chunked == 1
-            && ((struct protocol_http_topic_data *) p->topic->
-                data)->chunked == 0)
-          {
-            if (l == 0)
-              {
-                l = snprintf(buf2, 30, "%x\r\n", len);
-                memcpy(buf2 + l, buf, len);
-                l = l + len + 2;
-                buf2[l - 2] = '\r';
-                buf2[l - 1] = '\n';
-              }
-            server_send(from, p->topic, buf2, l);
-          }
-        else
-          server_send(from, p->topic, buf, len);
-      }
-  }
-}
-
 int protocol_http_read(struct client *c)
 {
   char buf[protocol_http_read_size];
@@ -216,7 +216,7 @@ int protocol_http_read(struct client *c)
 }
 
 int protocol_http_write
-  (struct client *from, struct client *to, char buf[], int len)
+  (struct topic *topicfrom, struct client *from, struct client *to, char buf[], int len)
 {
   int r;
   if (from != to && to->state > 0)

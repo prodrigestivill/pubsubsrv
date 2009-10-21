@@ -156,7 +156,7 @@ void server_send(struct client *from, struct topic *to, char buf[],
   topic_list_for_each(s, &to->subscribers)
   {
     if (s->state > 0)
-      server_write(from, s->client, buf, len);
+      server_write(to, from, s->client, buf, len);
   }
 }
 
