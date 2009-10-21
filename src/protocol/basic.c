@@ -17,11 +17,14 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define LINE_MAX_LEN 4096
 #include "../topology.h"
 #include "../server.h"
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+
+int protocol_basic_read_size;
 
 void protocol_basic_input(struct client *from, char buf[], int len)
 {
@@ -75,9 +78,9 @@ void protocol_basic_input(struct client *from, char buf[], int len)
 
 int protocol_basic_read(struct client *c)
 {
-  char buf[LINE_MAX_LEN];
+  char buf[protocol_basic_read_size];
   int i, l, n, len;
-  len = read(c->connection, buf, LINE_MAX_LEN);
+  len = read(c->connection, buf, protocol_basic_read_size);
   if (c->state > 0)
     {
       protocol_basic_input(c, buf, len);
@@ -145,4 +148,23 @@ void protocol_basic(int argc, char *argv[])
   server_endclient = protocol_basic_endclient;
   free_client_data = protocol_basic_free_client_data;
   free_topic_data = protocol_basic_free_topic_data;
+
+  int opt;
+  protocol_basic_read_size = 4096;
+  while ((opt = getopt(argc, argv, "s:h")) > 0)
+    {
+      switch (opt)
+        {
+          case 's':
+            protocol_basic_read_size = atoi(optarg);
+            break;
+          default:
+            fprintf(stderr,
+                    "\nBasic protcol options: usage in [protocol options]\n");
+            fprintf(stderr, "  -s<size>        : Read size\n");
+            fprintf(stderr,
+                    "  -h              : Show this help message\n");
+            exit(0);
+        }
+    }
 }
