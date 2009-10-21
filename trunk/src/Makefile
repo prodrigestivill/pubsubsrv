@@ -1,8 +1,7 @@
-CC?=gcc
-CFLAGS?=-g
+include ../config.mk
 
 OBJ=main.o server.o topology.o
-PROTOCOL_OBJ=protocol/basic.o protocol/textline.o protocol/http.o protocol/smtp.o protocol/irc.o
+PROTOCOL_OBJ=$(addsuffix .o, $(basename $(wildcard protocol/*.c)))
 PROGRAM=pubsubsrv
 
 all: ${OBJ} ${PROTOCOL_OBJ}
