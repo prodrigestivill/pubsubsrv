@@ -104,7 +104,7 @@ void protocol_irc_input(struct client *from, char buf[], int len)
         {
           c = protocol_irc_get_client(&buf[8], r - 8);
           if (c != 0)
-            server_write(from, c, buf2, strlen(buf2));
+            server_write(0, from, c, buf2, strlen(buf2));
         }
       return;
     }
@@ -175,7 +175,7 @@ int protocol_irc_read(struct client *c)
 }
 
 int protocol_irc_write
-  (struct client *from, struct client *to, char buf[], int len)
+  (struct topic *topicfrom, struct client *from, struct client *to, char buf[], int len)
 {
   int r;
   if (to->state > 0)

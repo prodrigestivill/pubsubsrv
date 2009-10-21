@@ -27,7 +27,7 @@ void server_send(struct client *from, struct topic *to, char *buf,
 struct client *(*server_newclient) (int);       //fd
 void (*server_endclient) (struct client *);     //from
 int (*server_read) (struct client *);   //from
-int (*server_write) (struct client *, struct client *, char *, int);    //from, to, buf, len
+int (*server_write) (struct topic *, struct client *, struct client *, char *, int);    //from, from, to, buf, len
 void server_close(int fd);
 
 #endif
