@@ -16,6 +16,9 @@ C: Broadcast send
 S: Message received
 }}}
 
+Protocol options:
+ * `-s<size>` Read size.
+
 
 = Textline =
 Similar to Basic protocol, but oriented to lines of text.
@@ -46,6 +49,9 @@ Could be any number of clients using PUT to a single PATH, and the client using 
 Could be used for:
  * Pushing content with `Content-Type: multipart/x-mixed-replace`
  * Streaming binary data
+
+Protocol options:
+ * `-s<size>` Read size.
 
 
 = SMTP =
