@@ -25,12 +25,14 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <netinet/in.h>
 
 void usage(char *_name)
 {
   fprintf(stderr, "\nUsage: %s [options] -- [protocol options]\n", _name);
   fprintf(stderr, "  -l<port>        : Listen TCP port number\n");
+  fprintf(stderr, "  -s<unix-socket> : Listen Unix socket file\n");
   fprintf(stderr, "  -P<protocol>    : Protocols\n");
   fprintf(stderr, "     basic, textline,\n");
   fprintf(stderr, "     http, smtp, irc, ...\n");
@@ -39,17 +41,21 @@ void usage(char *_name)
 
 int main(int argc, char *argv[])
 {
-  struct sockaddr_in serv_addr;
-  char *programName;
-  int sockfd, opt, port = 0, protocol = 0;
+  struct sockaddr_in serv_addr_in;
+  struct sockaddr_un serv_addr_un;
+  char *programName, *usocket = 0;
+  int sockfd, opt, port = -1, protocol = 0;
   programName = argv[0];
   topology();
-  while ((opt = getopt(argc, argv, "l:P:h")) > 0)
+  while ((opt = getopt(argc, argv, "l:s:P:h")) > 0)
     {
       switch (opt)
         {
           case 'l':
             port = atoi(optarg);
+            break;
+          case 's':
+            usocket = optarg;
             break;
           case 'P':
             if (strcmp(optarg, "basic") == 0)
@@ -73,7 +79,7 @@ int main(int argc, char *argv[])
             return 0;
         }
     }
-  if (port == 0)
+  if (port <0 && usocket==0)
     {
       usage(programName);
       return 0;
@@ -97,21 +103,38 @@ int main(int argc, char *argv[])
         protocol_basic(argc, argv);
     }
   //Start
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  if (sockfd < 0)
-    {
-      fprintf(stderr, "ERROR opening socket\n");
-      return 1;
-    }
-  bzero((char *) &serv_addr, sizeof(serv_addr));
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_addr.s_addr = INADDR_ANY;
-  serv_addr.sin_port = htons(port);
-  if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
-    {
-      fprintf(stderr, "ERROR on binding\n");
-      return 1;
-    }
+  if (port>=0){
+	  sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	  if (sockfd < 0)
+		{
+		  fprintf(stderr, "ERROR opening TCP socket\n");
+		  return 1;
+		}
+	  bzero((char *) &serv_addr_in, sizeof(serv_addr_in));
+	  serv_addr_in.sin_family = AF_INET;
+	  serv_addr_in.sin_addr.s_addr = INADDR_ANY;
+	  serv_addr_in.sin_port = htons(port);
+	  if (bind(sockfd, (struct sockaddr *) &serv_addr_in, sizeof(serv_addr_in)) < 0)
+		{
+		  fprintf(stderr, "ERROR on binding\n");
+		  return 1;
+		}
+  }else{
+	  sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+	  if (sockfd < 0)
+		{
+		  fprintf(stderr, "ERROR opening unix socket\n");
+		  return 1;
+		}
+	  unlink(usocket);
+      serv_addr_un.sun_family = AF_UNIX;
+      strncpy(serv_addr_un.sun_path, usocket, (sizeof(struct sockaddr_un) - sizeof(short)));
+	  if (bind(sockfd, (struct sockaddr *) &serv_addr_un, sizeof(serv_addr_un)) < 0)
+		{
+		  fprintf(stderr, "ERROR on binding unix socket\n");
+		  return 1;
+		}
+  }
   server(sockfd);
   return 0;
 }
