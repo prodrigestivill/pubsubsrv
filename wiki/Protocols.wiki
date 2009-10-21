@@ -51,10 +51,12 @@ Could be any number of clients using PUT to a single PATH, and the client using 
 
 Could be used for:
  * Pushing content with `Content-Type: multipart/x-mixed-replace`
+ * Stream using `Transfer-Encoding: chunked`
  * Streaming binary data
 
 Protocol options:
  * `-s<size>` Read size.
+ * `-c` Force `Transfer-Encoding: chunked` output for all GET clients.
 
 
 = SMTP =
