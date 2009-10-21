@@ -1,0 +1,73 @@
+#summary Here explains the how to use the implemented protocols.
+#labels Featured
+
+= Basic =
+This protocol is compatible with binary streams. But this protocol don't permit the client to know who send neither the destination of the messages.
+Commands: SUBSCRIBE, PUBLISH, START, QUIT
+
+Example:
+{{{
+C: SUBSCRIBE example1
+C: SUBSCRIBE example2
+C: PUBLISH example3
+C: PUBLISH example4
+C: START
+C: Broadcast send
+S: Message received
+}}}
+
+
+= TextLine =
+Similar to Basic protocol, but oriented to lines of text.
+Commands: SUBSCRIBE, PUBLISH, QUIT
+Example:
+{{{
+C: SUBSCRIBE example1
+C: SUBSCRIBE example2
+C: PUBLISH example3
+C: PUBLISH example4
+C: example3>Message send
+S: example1>Message received
+C: *>Broadcast example 1
+C: >Broadcast example 2
+C: Broadcast example 3
+C: QUIT
+{The server closes the connection}
+}}}
+
+
+= HTTP =
+To publish any stream, its used the command PUT. pubsubsrv gets the Content-Type and it's used to answer when the others clients make a GET petition.
+
+If there is no publisher using PUT method to a specific PATH, any GET to this PATH will return a 404 Not Found error.
+
+Could be any number of clients using PUT to a single PATH, and the client using GET will receive all the data mixed.
+
+
+= SMTP =
+Its similar to SMTP but oriented to stream:
+{{{
+S: 220 PubSub Server
+C: HELO
+S: 250 Hello
+C: RECV FROM:<bob@example.org>
+S: 250 Ok
+C: RCPT TO:<alice@example.com>
+S: 250 Ok
+C: RCPT TO:<theboss@example.com>
+S: 250 Ok
+C: DATA
+S: 354 End data with <CR><LF>.<CR><LF>
+C: Send to all topics. (example)
+S: Recive from all topics. (example)
+C: .
+S: 250 Ok
+C: QUIT
+S: 221 Bye
+{The server closes the connection}
+}}}
+While inside the DATA block, the client receive all data from the RECV FROM topics and sends all to all RCPT TO topics.
+
+
+= IRC =
+A basic incomplete IRC implementation.
