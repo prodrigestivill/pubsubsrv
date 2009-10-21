@@ -17,7 +17,7 @@ S: Message received
 }}}
 
 
-= TextLine =
+= Textline =
 Similar to Basic protocol, but oriented to lines of text.
 Commands: SUBSCRIBE, PUBLISH, QUIT
 Example:
@@ -43,6 +43,10 @@ If there is no publisher using PUT method to a specific PATH, any GET to this PA
 
 Could be any number of clients using PUT to a single PATH, and the client using GET will receive all the data mixed.
 
+Could be used for:
+ * Pushing content with `Content-Type: multipart/x-mixed-replace`
+ * Streaming binary data
+
 
 = SMTP =
 Its similar to SMTP but oriented to stream:
@@ -66,6 +70,8 @@ C: QUIT
 S: 221 Bye
 {The server closes the connection}
 }}}
+It also accepts MAIL FROM instead of RECV FROM for full SMTP compatibility.
+
 While inside the DATA block, the client receive all data from the RECV FROM topics and sends all to all RCPT TO topics.
 
 
