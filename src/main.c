@@ -23,12 +23,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <sys/types.h> 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-void usage (char *_name){
-  fprintf(stderr, "\nUsage: %s [options]\n", _name);
+void usage(char *_name)
+{
+  fprintf(stderr, "\nUsage: %s [options] -- [protocol options]\n", _name);
   fprintf(stderr, "  -l<port>        : Listen TCP port number\n");
   fprintf(stderr, "  -P<protocol>    : Protocols\n");
   fprintf(stderr, "     basic, textline,\n");
@@ -38,62 +39,79 @@ void usage (char *_name){
 
 int main(int argc, char *argv[])
 {
-	struct sockaddr_in serv_addr;
-	char   *programName;
-	int sockfd, opt, port=0, protocol=0;
-	programName = argv[0];
-	topology();
-	while ((opt = getopt(argc, argv, "l:P:h")) > 0) {
-		switch (opt) {
-		   case 'l':
-				port = atoi(optarg);
-			break;
-		   case 'P':
-				if (strcmp(optarg, "basic")==0){
-					protocol=1;
-					protocol_basic();
-				}else if (strcmp(optarg, "textline")==0){
-					protocol=2;
-					protocol_textline();
-				}else if (strcmp(optarg, "http")==0){
-					protocol=10;
-					protocol_http();
-				}else if (strcmp(optarg, "smtp")==0){
-					protocol=11;
-					protocol_smtp();
-				}else if (strcmp(optarg, "irc")==0){
-					protocol=12;
-					protocol_irc();
-				}else{
-					usage(programName);
-					return 0;
-				}
-			break;
-			default:
-				usage(programName);
-				return 0;
-		}
-	}
-	if (port==0){
-		usage(programName);
-		return 0;
-	}	
-	if (protocol==0)
-		protocol_basic();
-	//Start
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if (sockfd < 0){
-		fprintf(stderr, "ERROR opening socket\n");
-		return 1;
-	}
-	bzero((char *) &serv_addr, sizeof(serv_addr));
-	serv_addr.sin_family = AF_INET;
-	serv_addr.sin_addr.s_addr = INADDR_ANY;
-	serv_addr.sin_port = htons(port);
-	if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0){
-		fprintf(stderr, "ERROR on binding\n");
-		return 1;
-	}
-	server(sockfd);
-	return 0;
+  struct sockaddr_in serv_addr;
+  char *programName;
+  int sockfd, opt, port = 0, protocol = 0;
+  programName = argv[0];
+  topology();
+  while ((opt = getopt(argc, argv, "l:P:h")) > 0)
+    {
+      switch (opt)
+        {
+          case 'l':
+            port = atoi(optarg);
+            break;
+          case 'P':
+            if (strcmp(optarg, "basic") == 0)
+              protocol = 1;
+            else if (strcmp(optarg, "textline") == 0)
+              protocol = 2;
+            else if (strcmp(optarg, "http") == 0)
+              protocol = 10;
+            else if (strcmp(optarg, "smtp") == 0)
+              protocol = 11;
+            else if (strcmp(optarg, "irc") == 0)
+              protocol = 12;
+            else
+              {
+                usage(programName);
+                return 0;
+              }
+            break;
+          default:
+            usage(programName);
+            return 0;
+        }
+    }
+  if (port == 0)
+    {
+      usage(programName);
+      return 0;
+    }
+  switch (protocol)
+    {
+      case 2:
+        protocol_textline(argc, argv);
+        break;
+      case 10:
+        protocol_http(argc, argv);
+        break;
+      case 11:
+        protocol_smtp(argc, argv);
+        break;
+      case 12:
+        protocol_irc(argc, argv);
+        break;
+      case 1:
+      default:
+        protocol_basic(argc, argv);
+    }
+  //Start
+  sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  if (sockfd < 0)
+    {
+      fprintf(stderr, "ERROR opening socket\n");
+      return 1;
+    }
+  bzero((char *) &serv_addr, sizeof(serv_addr));
+  serv_addr.sin_family = AF_INET;
+  serv_addr.sin_addr.s_addr = INADDR_ANY;
+  serv_addr.sin_port = htons(port);
+  if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
+    {
+      fprintf(stderr, "ERROR on binding\n");
+      return 1;
+    }
+  server(sockfd);
+  return 0;
 }
