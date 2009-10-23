@@ -20,6 +20,7 @@
 
 #include "server.h"
 
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +29,8 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
+
+static char *usocket = 0;
 
 void usage(char *_name)
 {
@@ -40,11 +43,17 @@ void usage(char *_name)
   fprintf(stderr, "  -h              : Show this help message\n");
 }
 
+void sig_int_handler(int sig)
+{
+  if (usocket!=0)
+    unlink(usocket);
+}
+
 int main(int argc, char *argv[])
 {
   struct sockaddr_in serv_addr_in;
   struct sockaddr_un serv_addr_un;
-  char *programName, *usocket = 0;
+  char *programName;
   int sockfd, opt, port = -1, protocol = 0;
   programName = argv[0];
   topology();
@@ -85,6 +94,8 @@ int main(int argc, char *argv[])
       usage(programName);
       return 0;
     }
+  signal(SIGINT, sig_int_handler);
+  signal(SIGTERM, sig_int_handler);
   switch (protocol)
     {
       case 2:
