@@ -47,6 +47,7 @@ void sig_int_handler(int sig)
 {
   if (usocket!=0)
     unlink(usocket);
+  exit(143);
 }
 
 int main(int argc, char *argv[])
