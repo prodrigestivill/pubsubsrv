@@ -21,4 +21,4 @@
 int pubsub_textline_subscribe(int fd, char *name);
 int pubsub_textline_publish(int fd, char *name);
 int pubsub_textline_send(int fd, char *topic, char *text);
-int pubsub_textline_recive(int fd, char *topic, int tlen, char *text, int len);
+int pubsub_textline_receive(int fd, char *topic, int tlen, char *text, int len);

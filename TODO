@@ -1,0 +1,8 @@
+TODO
+====
+
+* is there a way to lock until somebody gets subscribed?
+* use single structure to define all function pointers
+* implement client-side protocol apis
+* implement command-line pubsub client
+* allow to define the list of plugins (first one is default)

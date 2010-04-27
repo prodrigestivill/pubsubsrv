@@ -47,28 +47,27 @@ int pubsub_textline_send(int fd, char *topic, char *text){
 	return write(fd, buf, r);
 }
 
-int pubsub_textline_recive(int fd, char *topic, int tlen, char *text, int len){
+int pubsub_textline_receive(int fd, char *topic, int tlen, char *text, int len){
 	int r,i,l;
 	l = tlen+len+3;
 	char buf[l];
 	r = read(fd, buf, l);
 	if (r>0){
-		for (i=0; i<l;i++)
+		for (i=0; i<l; i++)
 			if (buf[i]=='>')
 				break;
-		if (i==l){
-			i=0;
-		}else{
+		if (i!=l) {
 			memcpy(topic, buf, i);
 			topic[i]='\0';
 			i++;
-		}
-		//Remove tailing '\n'
-		while (r > 1 && (buf[r - 1] == '\n' || buf[r - 1] == '\r'))
+			i = 0;
+		} else i = 0;
+		// Remove tailing '\n'
+		while(r>1 && (buf[r-1]=='\n' || buf[r-1]=='\r'))
 			r--;
 		l = r-i;
 		memcpy(text, buf+i, l);
 		return l;
-	}else
-		return r;
+	}
+	return r;
 }
