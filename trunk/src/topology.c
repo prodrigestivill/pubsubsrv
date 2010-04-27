@@ -79,7 +79,7 @@ struct topic *get_existent_topic(char *name, int len)
   struct topic *t;
   item_list_for_each(t, &topics)
   {
-    if (strncmp(t->name, name, len) == 0)
+    if (!strncmp(t->name, name, len))
       return t;
   }
   return 0;
@@ -90,7 +90,7 @@ struct topic *get_topic(char *name, int len)
   struct topic *t;
   item_list_for_each(t, &topics)
   {
-    if (strncmp(t->name, name, len) == 0)
+    if (!strncmp(t->name, name, len))
       return t;
   }
   return add_topic(name, len);

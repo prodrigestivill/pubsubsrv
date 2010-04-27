@@ -143,6 +143,7 @@ void protocol_basic_free_topic_data(struct topic *t)
 
 void protocol_basic(int argc, char *argv[])
 {
+  int opt;
   server_read = protocol_basic_read;
   server_write = protocol_basic_write;
   server_newclient = protocol_basic_newclient;
@@ -150,22 +151,18 @@ void protocol_basic(int argc, char *argv[])
   free_client_data = protocol_basic_free_client_data;
   free_topic_data = protocol_basic_free_topic_data;
 
-  int opt;
   protocol_basic_read_size = 4096;
-  while ((opt = getopt(argc, argv, "s:h")) > 0)
-    {
-      switch (opt)
-        {
-          case 's':
-            protocol_basic_read_size = atoi(optarg);
-            break;
-          default:
-            fprintf(stderr,
-                    "\nBasic protcol options: usage in [protocol options]\n");
-            fprintf(stderr, "  -s<size>        : Read size\n");
-            fprintf(stderr,
-                    "  -h              : Show this help message\n");
-            exit(0);
-        }
+  while ((opt = getopt(argc, argv, "s:h")) > 0) {
+    switch (opt) {
+      case 's':
+        protocol_basic_read_size = atoi(optarg);
+        break;
+      default:
+        fprintf(stderr,
+            "Basic protcol options: usage in [protocol options]\n"
+            "  -s<size>        : Read size\n"
+            "  -h              : Show this help message\n");
+        exit(0);
     }
+  }
 }

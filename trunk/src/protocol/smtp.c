@@ -31,11 +31,11 @@ void protocol_smtp_input(struct client *from, char buf[], int len)
   int r;
   switch (from->state)
     {
-      case 0:                  // Setup mode
-        //Remove tailing '\n'
+      case 0: // Setup mode
+        // Remove tailing '\n'
         while (len > 1 && (buf[len - 1] == '\n' || buf[len - 1] == '\r'))
           len--;
-        //RECV FROM: || MAIL FROM:
+        // RECV FROM: || MAIL FROM:
         if (len > 10 && strncmp(" FROM:", buf + 4, 6) == 0 &&
             (strncmp("RECV", buf, 4) == 0 || strncmp("MAIL", buf, 4) == 0))
           {
@@ -44,7 +44,7 @@ void protocol_smtp_input(struct client *from, char buf[], int len)
             s->state = 1;
             break;
           }
-        //RCPT TO:
+        // RCPT TO:
         if (len > 8 && strncmp("RCPT TO:", buf, 8) == 0)
           {
             p = publisher(from, get_topic(buf + 8, len - 8));
@@ -52,16 +52,15 @@ void protocol_smtp_input(struct client *from, char buf[], int len)
             p->state = 1;
             break;
           }
-        //DATA
+        // DATA
         if (len > 3 && strncmp("DATA", buf, 4) == 0)
           {
-            r =
-              write(from->connection,
+            r = write(from->connection,
                     "354 End data with <CR><LF>.<CR><LF>\r\n", 37);
             from->state = 1;
             break;
           }
-        //QUIT
+        // QUIT
         if (len > 3 && strncmp("QUIT", buf, 4) == 0)
           {
             remove_client(from);
@@ -69,7 +68,7 @@ void protocol_smtp_input(struct client *from, char buf[], int len)
             server_close(from->connection);
             break;
           }
-        //HELO
+        // HELO
         if (len > 3 && strncmp("HELO", buf, 4) == 0)
           {
             r = write(from->connection, "250 Helo\r\n", 10);
@@ -77,7 +76,7 @@ void protocol_smtp_input(struct client *from, char buf[], int len)
           }
         r = write(from->connection, "502 Command not implemented\r\n", 29);
         break;
-      case 2:                  //Streaming (last ended \n)
+      case 2: // Streaming (last ended \n)
         if (len > 0 && buf[0] == '.'
             && (len == 2 || (len == 3 && buf[1] == '\r')))
           {
@@ -85,8 +84,8 @@ void protocol_smtp_input(struct client *from, char buf[], int len)
             r = write(from->connection, "250 Ok\r\n", 8);
             break;
           }
-        //Don't break here!!!
-      case 1:                  // Streaming mode
+        // Don't break here!!!
+      case 1: // Streaming mode
         client_list_for_each(p, &from->publishers)
         {
           if (p->state > 0)

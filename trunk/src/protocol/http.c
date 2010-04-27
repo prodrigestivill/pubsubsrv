@@ -266,6 +266,7 @@ void protocol_http_free_topic_data(struct topic *t)
 
 void protocol_http(int argc, char *argv[])
 {
+  int opt;
   server_read = protocol_http_read;
   server_write = protocol_http_write;
   server_newclient = protocol_http_newclient;
@@ -273,7 +274,6 @@ void protocol_http(int argc, char *argv[])
   free_client_data = protocol_http_free_client_data;
   free_topic_data = protocol_http_free_topic_data;
 
-  int opt;
   protocol_http_read_size = 4096;
   protocol_http_allways_chunked = 0;
   while ((opt = getopt(argc, argv, "s:hc")) > 0)

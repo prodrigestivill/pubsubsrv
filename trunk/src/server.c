@@ -60,7 +60,7 @@ void server(int sockfd)
     }
   listen(sockfd, NEW_CLIENTS);
   cliaddrlen = sizeof(cliaddr);
-  while (1)
+  for(;;)
     {
       r = poll(pollfds, pollfdsmax, POLL_TO);
       if (r > 0)
@@ -129,7 +129,7 @@ void server(int sockfd)
                 }
             }
         }
-      //Shrink pollfds & pollclients arrays
+      // Shrink pollfds & pollclients arrays
       if (pollfdsmax - pollfdslen >= NEW_CLIENTS * 2)
         {
           for (i = pollfdsmax - NEW_CLIENTS; i < pollfdsmax; i++)
@@ -150,8 +150,7 @@ void server(int sockfd)
     }
 }
 
-void server_send(struct client *from, struct topic *to, char buf[],
-                 int len)
+void server_send(struct client *from, struct topic *to, char buf[], int len)
 {
   struct subscriber *s;
   topic_list_for_each(s, &to->subscribers)
