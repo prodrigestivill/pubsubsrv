@@ -41,15 +41,16 @@ int pollfdslen, pollfdsmax;
 struct pollfd *pollfds;
 struct client **pollclients;
 
-void server(int sockfd)
+void
+server (int sockfd)
 {
   struct sockaddr_in cliaddr;
   socklen_t cliaddrlen;
   int i, j, r;
   pollfdslen = 1;
   pollfdsmax = NEW_CLIENTS + 1;
-  pollfds = malloc(pollfdsmax * sizeof(struct pollfd));
-  pollclients = malloc(pollfdsmax * sizeof(struct client *));
+  pollfds = malloc (pollfdsmax * sizeof (struct pollfd));
+  pollclients = malloc (pollfdsmax * sizeof (struct client *));
   pollfds[0].fd = sockfd;
   pollfds[0].events = POLLIN;
   pollfds[0].revents = 0;
@@ -58,109 +59,125 @@ void server(int sockfd)
       pollfds[i].fd = -1;
       pollfds[i].events = 0;
     }
-  listen(sockfd, NEW_CLIENTS);
-  cliaddrlen = sizeof(cliaddr);
-  for(;;)
+  listen (sockfd, NEW_CLIENTS);
+  cliaddrlen = sizeof (cliaddr);
+  for (;;)
     {
-      r = poll(pollfds, pollfdsmax, POLL_TO);
+      r = poll (pollfds, pollfdsmax, POLL_TO);
       if (r > 0)
-        {
-          if (pollfds[0].revents != 0 && pollfdslen < MAX_CLIENTS)
-            {
-              if (pollfdslen + 1 > pollfdsmax)
-                {
-                  pollfdsmax += NEW_CLIENTS;
-                  pollfds =
-                    realloc(pollfds, pollfdsmax * sizeof(struct pollfd));
-                  pollclients =
-                    realloc(pollclients,
-                            pollfdsmax * sizeof(struct client *));
-                  for (i = pollfdsmax - NEW_CLIENTS; i < pollfdsmax; i++)
-                    {
-                      pollfds[i].fd = -1;
-                      pollfds[i].events = 0;
-                    }
-                  i = pollfdslen;
-                }
-              else
-                {
-                  for (i = 1; i < pollfdslen; i++)
-                    if (pollfds[i].fd < 0)
-                      break;
-                }
-              pollfds[i].fd =
-                accept(sockfd, (struct sockaddr *) &cliaddr, &cliaddrlen);
-              pollfds[i].events = POLLIN | POLLRDHUP;
-              pollfds[i].revents = 0;
-              pollclients[i] = server_newclient(pollfds[i].fd);
-              if (pollclients[i] == 0)
-                {
-                  server_close(pollfds[i].fd);
-                  pollfds[i].fd = -1;
-                }
-              else
-                {
-                  memcpy(&pollclients[i]->connection_addr, &cliaddr,
-                         cliaddrlen);
-                  pollfdslen++;
-                }
-              r--;
-            }
-          pollfds[0].revents = 0;
-          for (i = 1; i < pollfdsmax && r > 0; i++)
-            {
-              if (pollfds[i].fd != -1 && pollfds[i].revents != 0)
-                {
-                  if (pollfds[i].revents & POLLHUP ||
-                      pollfds[i].revents & POLLRDHUP ||
-                      pollfds[i].revents & POLLERR ||
-                      pollfds[i].revents & POLLNVAL)
-                    {
-                      server_endclient(pollclients[i]);
-                      remove_client_fd(pollfds[i].fd);
-                      server_close(pollfds[i].fd);
-                      pollfds[i].fd = -1;
-                      pollfdslen--;
-                    }
-                  else
-                    server_read(pollclients[i]);
-                  pollfds[i].revents = 0;
-                  r--;
-                }
-            }
-        }
+	{
+	  if (pollfds[0].revents != 0 && pollfdslen < MAX_CLIENTS)
+	    {
+	      if (pollfdslen + 1 > pollfdsmax)
+		{
+		  pollfdsmax += NEW_CLIENTS;
+		  pollfds =
+		    realloc (pollfds, pollfdsmax * sizeof (struct pollfd));
+		  pollclients =
+		    realloc (pollclients,
+			     pollfdsmax * sizeof (struct client *));
+		  for (i = pollfdsmax - NEW_CLIENTS; i < pollfdsmax; i++)
+		    {
+		      pollfds[i].fd = -1;
+		      pollfds[i].events = 0;
+		    }
+		  i = pollfdslen;
+		}
+	      else
+		{
+		  for (i = 1; i < pollfdslen; i++)
+		    if (pollfds[i].fd < 0)
+		      break;
+		}
+	      pollfds[i].fd =
+		accept (sockfd, (struct sockaddr *) &cliaddr, &cliaddrlen);
+	      pollfds[i].events = POLLIN | POLLRDHUP;
+	      pollfds[i].revents = 0;
+	      pollclients[i] = server_newclient (pollfds[i].fd);
+	      if (pollclients[i] == 0)
+		{
+		  server_close (pollfds[i].fd);
+		  pollfds[i].fd = -1;
+		}
+	      else
+		{
+		  memcpy (&pollclients[i]->connection_addr, &cliaddr,
+			  cliaddrlen);
+		  pollfdslen++;
+		}
+	      r--;
+	    }
+	  pollfds[0].revents = 0;
+	  for (i = 1; i < pollfdsmax && r > 0; i++)
+	    {
+	      if (pollfds[i].fd != -1 && pollfds[i].revents != 0)
+		{
+		  if (pollfds[i].revents & POLLHUP ||
+		      pollfds[i].revents & POLLRDHUP ||
+		      pollfds[i].revents & POLLERR ||
+		      pollfds[i].revents & POLLNVAL)
+		    {
+		      server_endclient (pollclients[i]);
+		      remove_client_fd (pollfds[i].fd);
+		      server_close (pollfds[i].fd);
+		      pollfds[i].fd = -1;
+		      pollfdslen--;
+		    }
+		  else
+		    {
+		      if (server_read (pollclients[i]) < 0)
+			server_close_client (pollclients[i]);
+		    }
+		  pollfds[i].revents = 0;
+		  r--;
+		}
+	    }
+	}
       // Shrink pollfds & pollclients arrays
       if (pollfdsmax - pollfdslen >= NEW_CLIENTS * 2)
-        {
-          for (i = pollfdsmax - NEW_CLIENTS; i < pollfdsmax; i++)
-            if (pollfds[i].fd >= 0)
-              for (j = 1; j < pollfdsmax - NEW_CLIENTS; j++)
-                if (pollfds[j].fd < 0)
-                  {
-                    pollfds[j].fd = pollfds[i].fd;
-                    pollfds[j].events = pollfds[i].events;
-                    pollfds[j].revents = 0;
-                    pollclients[j] = pollclients[i];
-                  }
-          pollfdsmax -= NEW_CLIENTS;
-          pollfds = realloc(pollfds, pollfdsmax * sizeof(struct pollfd));
-          pollclients =
-            realloc(pollclients, pollfdsmax * sizeof(struct client *));
-        }
+	{
+	  for (i = pollfdsmax - NEW_CLIENTS; i < pollfdsmax; i++)
+	    if (pollfds[i].fd >= 0)
+	      for (j = 1; j < pollfdsmax - NEW_CLIENTS; j++)
+		if (pollfds[j].fd < 0)
+		  {
+		    pollfds[j].fd = pollfds[i].fd;
+		    pollfds[j].events = pollfds[i].events;
+		    pollfds[j].revents = 0;
+		    pollclients[j] = pollclients[i];
+		  }
+	  pollfdsmax -= NEW_CLIENTS;
+	  pollfds = realloc (pollfds, pollfdsmax * sizeof (struct pollfd));
+	  pollclients =
+	    realloc (pollclients, pollfdsmax * sizeof (struct client *));
+	}
     }
 }
 
-void server_send(struct client *from, struct topic *to, char buf[], int len)
+void
+server_send (struct client *from, struct topic *to, char buf[], int len)
 {
   struct subscriber *s;
-  topic_list_for_each(s, &to->subscribers)
+  topic_list_for_each (s, &to->subscribers)
   {
     if (s->state > 0)
-      server_write(to, from, s->client, buf, len);
+      {
+	if (server_write (to, from, s->client, buf, len) < 0)
+	  server_close_client (s);
+      }
   }
 }
 
-void server_close(int fd)
+void
+server_close_client (struct client *s)
 {
-  close(fd);
+  server_endclient (s->client);
+  server_close (s->client->connection);
+  remove_client (s->client);
+}
+
+void
+server_close (int fd)
+{
+  close (fd);
 }
