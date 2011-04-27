@@ -35,32 +35,33 @@ struct protocol_irc_client_data
   char host[256];
 };
 
-struct client *protocol_irc_get_client(char *name, int len)
+struct client *
+protocol_irc_get_client (char *name, int len)
 {
   struct client *c;
-  item_list_for_each(c, &clients)
+  item_list_for_each (c, &clients)
   {
     if (strncmp
-        (((struct protocol_irc_client_data *) c->data)->nick, name,
-         len) == 0)
+	(((struct protocol_irc_client_data *) c->data)->nick, name, len) == 0)
       return c;
   }
   return 0;
 }
 
-struct topic *protocol_irc_get_topic(struct client *from, char *name,
-                                     int len)
+struct topic *
+protocol_irc_get_topic (struct client *from, char *name, int len)
 {
   struct publisher *p;
-  client_list_for_each(p, &from->publishers)
+  client_list_for_each (p, &from->publishers)
   {
-    if (strncmp(p->topic->name, name, len) == 0)
+    if (strncmp (p->topic->name, name, len) == 0)
       return p->topic;
   }
   return 0;
 }
 
-void protocol_irc_input(struct client *from, char buf[], int len)
+void
+protocol_irc_input (struct client *from, char buf[], int len)
 {
   char buf2[SEND_MAX_LEN];
   struct client *c;
@@ -75,145 +76,159 @@ void protocol_irc_input(struct client *from, char buf[], int len)
     buf[len] = '\0';
   else
     buf[RECV_MAX_LEN - 1] = '\0';
-  if (len > 6 && strncmp("JOIN #", buf, 6) == 0)
+  if (len > 6 && strncmp ("JOIN #", buf, 6) == 0)
     {
-      t = get_topic(buf + 6, len - 6);
-      s = subscriber(from, t);
+      t = get_topic (buf + 6, len - 6);
+      s = subscriber (from, t);
       s->state = 1;
       //Moderate?
-      p = publisher(from, t);
+      p = publisher (from, t);
       p->state = 1;
       return;
     }
-  if (len > 8 && strncmp("PRIVMSG ", buf, 8) == 0)
+  if (len > 8 && strncmp ("PRIVMSG ", buf, 8) == 0)
     {
-      snprintf(buf2, SEND_MAX_LEN, ":%s!n=%s@%s %s\r\n",
-               ((struct protocol_irc_client_data *) from->data)->nick,
-               ((struct protocol_irc_client_data *) from->data)->user,
-               ((struct protocol_irc_client_data *) from->data)->host,
-               buf);
+      snprintf (buf2, SEND_MAX_LEN, ":%s!n=%s@%s %s\r\n",
+		((struct protocol_irc_client_data *) from->data)->nick,
+		((struct protocol_irc_client_data *) from->data)->user,
+		((struct protocol_irc_client_data *) from->data)->host, buf);
       for (r = 9; r < len; r++)
-        if (buf[r] == ' ' || buf[r] == ':')
-          break;
+	if (buf[r] == ' ' || buf[r] == ':')
+	  break;
       if (buf[8] == '#')
-        {
-          t = protocol_irc_get_topic(from, &buf[9], r - 9);
-          if (t != 0)
-            server_send(from, t, buf2, strlen(buf2));
-        }
+	{
+	  t = protocol_irc_get_topic (from, &buf[9], r - 9);
+	  if (t != 0)
+	    server_send (from, t, buf2, strlen (buf2));
+	}
       else
-        {
-          c = protocol_irc_get_client(&buf[8], r - 8);
-          if (c != 0)
-            server_write(0, from, c, buf2, strlen(buf2));
-        }
+	{
+	  c = protocol_irc_get_client (&buf[8], r - 8);
+	  if (c != 0)
+	    server_write (0, from, c, buf2, strlen (buf2));
+	}
       return;
     }
-  if (len > 4 && strncmp("PING ", buf, 5) == 0)
+  if (len > 4 && strncmp ("PING ", buf, 5) == 0)
     {
-      snprintf(buf2, SEND_MAX_LEN, ":server PONG server : %s\r\n",
-               &buf[5]);
-      r = write(from->connection, buf2, strlen(buf2));
+      snprintf (buf2, SEND_MAX_LEN, ":server PONG server : %s\r\n", &buf[5]);
+      r = write (from->connection, buf2, strlen (buf2));
+      if (r < 0)
+	{
+	  server_close_client (from);
+	  return;
+	}
       return;
     }
-  if (len > 5 && strncmp("NICK ", buf, 5) == 0)
+  if (len > 5 && strncmp ("NICK ", buf, 5) == 0)
     {
       if (len - 4 > NICK_MAX_LEN)
-        len = NICK_MAX_LEN + 4;
-      memcpy(((struct protocol_irc_client_data *) from->data)->nick,
-             &buf[5], len - 5);
-      ((struct protocol_irc_client_data *) from->data)->nick[len - 5] =
-        '\0';
+	len = NICK_MAX_LEN + 4;
+      memcpy (((struct protocol_irc_client_data *) from->data)->nick,
+	      &buf[5], len - 5);
+      ((struct protocol_irc_client_data *) from->data)->nick[len - 5] = '\0';
       from->state = 1;
       return;
     }
-  if (len > 5 && strncmp("USER ", buf, 5) == 0)
+  if (len > 5 && strncmp ("USER ", buf, 5) == 0)
     {
       for (r = 6; r < len; r++)
-        if (buf[r] == ' ')
-          break;
+	if (buf[r] == ' ')
+	  break;
       if (r - 4 > NICK_MAX_LEN)
-        r = NICK_MAX_LEN + 4;
-      memcpy(((struct protocol_irc_client_data *) from->data)->user,
-             &buf[5], r - 5);
+	r = NICK_MAX_LEN + 4;
+      memcpy (((struct protocol_irc_client_data *) from->data)->user,
+	      &buf[5], r - 5);
       ((struct protocol_irc_client_data *) from->data)->user[r - 5] = '\0';
       from->state = 1;
       return;
     }
   /*
      if (len > 3 && strncmp("QUIT", buf, 4)==0){
-     remove_client(from);
-     r = write(from->connection, "221 Bye\r\n", 9);
-     server_close(from->connection);
+     (void) write(from->connection, "221 Bye\r\n", 9);
+     server_close_client(from);
      return;
      }
      r = write(from->connection, ": Command not implemented\r\n", 27);
+     if (r<0){
+     server_close_client(from);
+     return;
+     }
    */
 }
 
-int protocol_irc_read(struct client *c)
+int
+protocol_irc_read (struct client *c)
 {
   char buf[RECV_MAX_LEN];
   int i, l, n, len;
-  len = read(c->connection, buf, RECV_MAX_LEN);
+  len = read (c->connection, buf, RECV_MAX_LEN);
+  if (len < 0)
+    return -1;
   n = 0;
   l = 0;
   for (i = 0; i < len; i++)
     {
       if (buf[i] == '\n')
-        {
-          protocol_irc_input(c, &buf[l], i - l + 1);
-          l = i + 1;
-          n++;
-        }
+	{
+	  protocol_irc_input (c, &buf[l], i - l + 1);
+	  l = i + 1;
+	  n++;
+	}
     }
   if (l < len)
     {
-      protocol_irc_input(c, &buf[l], len - l);
+      protocol_irc_input (c, &buf[l], len - l);
       n++;
     }
   return n;
 }
 
 int protocol_irc_write
-  (struct topic *topicfrom, struct client *from, struct client *to, char buf[], int len)
+  (struct topic *topicfrom, struct client *from, struct client *to,
+   char buf[], int len)
 {
   int r;
   if (to->state > 0)
     {
-      r = write(to->connection, buf, len);
+      r = write (to->connection, buf, len);
       if (r == len)
-        return 1;
+	return 1;
       if (r < 0)
-        return r;
+	return r;
     }
   return 0;
 }
 
-struct client *protocol_irc_newclient(int fd)
+struct client *
+protocol_irc_newclient (int fd)
 {
-  struct client *c = get_client(fd);
-  c->data = malloc(sizeof(struct protocol_irc_client_data));
+  struct client *c = get_client (fd);
+  c->data = malloc (sizeof (struct protocol_irc_client_data));
   ((struct protocol_irc_client_data *) c->data)->nick[0] = '\0';
   ((struct protocol_irc_client_data *) c->data)->user[0] = '\0';
   ((struct protocol_irc_client_data *) c->data)->host[0] = '\0';
   return c;
 }
 
-void protocol_irc_endclient(struct client *c)
+void
+protocol_irc_endclient (struct client *c)
 {
 }
 
-void protocol_irc_free_client_data(struct client *c)
+void
+protocol_irc_free_client_data (struct client *c)
 {
-  free(c->data);
+  free (c->data);
 }
 
-void protocol_irc_free_topic_data(struct topic *t)
+void
+protocol_irc_free_topic_data (struct topic *t)
 {
 }
 
-void protocol_irc(int argc, char *argv[])
+void
+protocol_irc (int argc, char *argv[])
 {
   server_read = protocol_irc_read;
   server_write = protocol_irc_write;

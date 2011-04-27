@@ -26,47 +26,47 @@
 #include <unistd.h>
 #include <string.h>
 
-struct topic *protocol_textline_get_topic(struct client *from, char *name,
-                                          int len)
+struct topic *
+protocol_textline_get_topic (struct client *from, char *name, int len)
 {
   struct publisher *p;
-  client_list_for_each(p, &from->publishers)
+  client_list_for_each (p, &from->publishers)
   {
-    if (strncmp(p->topic->name, name, len) == 0)
+    if (strncmp (p->topic->name, name, len) == 0)
       return p->topic;
   }
   return 0;
 }
 
-void protocol_textline_input(struct client *from, char buf[], int len)
+void
+protocol_textline_input (struct client *from, char buf[], int len)
 {
   struct subscriber *s;
   struct publisher *p;
   struct topic *t;
   char buf2[LINE_MAX_LEN];
   int l, r, r2;
-  if (len > 10 && strncmp("SUBSCRIBE ", buf, 10) == 0)
+  if (len > 10 && strncmp ("SUBSCRIBE ", buf, 10) == 0)
     {
       //Remove tailing '\n'
       while (len > 1 && (buf[len - 1] == '\n' || buf[len - 1] == '\r'))
-        len--;
-      s = subscriber(from, get_topic(buf + 10, len - 10));
+	len--;
+      s = subscriber (from, get_topic (buf + 10, len - 10));
       s->state = 1;
       return;
     }
-  if (len > 8 && strncmp("PUBLISH ", buf, 8) == 0)
+  if (len > 8 && strncmp ("PUBLISH ", buf, 8) == 0)
     {
       //Remove tailing '\n'
       while (len > 1 && (buf[len - 1] == '\n' || buf[len - 1] == '\r'))
-        len--;
-      p = publisher(from, get_topic(buf + 8, len - 8));
+	len--;
+      p = publisher (from, get_topic (buf + 8, len - 8));
       p->state = 1;
       return;
     }
-  if (len > 3 && strncmp("QUIT", buf, 4) == 0)
+  if (len > 3 && strncmp ("QUIT", buf, 4) == 0)
     {
-      remove_client(from);
-      server_close(from->connection);
+      server_close_client (from);
       return;
     }
   for (l = 0; l < len; l++)
@@ -77,89 +77,105 @@ void protocol_textline_input(struct client *from, char buf[], int len)
   if (l < 1 || (l == 1 && buf[0] == '*'))
     {
       //BROADCAST
-      client_list_for_each(p, &from->publishers)
+      client_list_for_each (p, &from->publishers)
       {
-        if (p->state > 0)
-          {
-            r = strlen(p->topic->name);
-            memcpy(buf2, p->topic->name, r);
-            if (l < 0)
-              buf2[r++] = '>';
-            r2 = (r + len - l > LINE_MAX_LEN ? LINE_MAX_LEN - r : len - l);
-            memcpy(buf2 + r, buf + l, r2);
-            server_send(from, p->topic, buf2, r + r2);
-          }
+	if (p->state > 0)
+	  {
+	    r = strlen (p->topic->name);
+	    memcpy (buf2, p->topic->name, r);
+	    if (l < 0)
+	      buf2[r++] = '>';
+	    r2 = (r + len - l > LINE_MAX_LEN ? LINE_MAX_LEN - r : len - l);
+	    memcpy (buf2 + r, buf + l, r2);
+	    server_send (from, p->topic, buf2, r + r2);
+	  }
       }
     }
   else
     {
-      t = protocol_textline_get_topic(from, buf, l);
+      t = protocol_textline_get_topic (from, buf, l);
       if (t != 0)
-        server_send(from, t, buf, len);
+	server_send (from, t, buf, len);
       else
-        r =
-          write(from->connection, "ERR: Topic not set for publishing.\r\n",
-                36);
+	{
+	  r =
+	    write (from->connection, "ERR: Topic not set for publishing.\r\n",
+		   36);
+	  if (r < 0)
+	    {
+	      server_close_client (from);
+	      return;
+	    }
+	}
     }
 }
 
-int protocol_textline_read(struct client *c)
+int
+protocol_textline_read (struct client *c)
 {
   char buf[LINE_MAX_LEN];
   int i, l, n, len;
-  len = read(c->connection, buf, LINE_MAX_LEN);
+  len = read (c->connection, buf, LINE_MAX_LEN);
+  if (len < 0)
+    return -1;
   n = 0;
   l = 0;
   for (i = 0; i < len; i++)
     {
       if (buf[i] == '\n')
-        {
-          protocol_textline_input(c, &buf[l], i - l + 1);
-          l = i + 1;
-          n++;
-        }
+	{
+	  protocol_textline_input (c, &buf[l], i - l + 1);
+	  l = i + 1;
+	  n++;
+	}
     }
   if (l < len)
     {
-      protocol_textline_input(c, &buf[l], len - l);
+      protocol_textline_input (c, &buf[l], len - l);
       n++;
     }
   return n;
 }
 
 int protocol_textline_write
-  (struct topic *topicfrom, struct client *from, struct client *to, char buf[], int len)
+  (struct topic *topicfrom, struct client *from, struct client *to,
+   char buf[], int len)
 {
   int r;
   if (from != to)
     {
-      r = write(to->connection, buf, len);
+      r = write (to->connection, buf, len);
       if (r == len)
-        return 1;
+	return 1;
       if (r < 0)
-        return r;
+	return r;
     }
   return 0;
 }
 
-struct client *protocol_textline_newclient(int fd)
+struct client *
+protocol_textline_newclient (int fd)
 {
-  return get_client(fd);
+  return get_client (fd);
 }
 
-void protocol_textline_endclient(struct client *c)
-{
-}
-
-void protocol_textline_free_client_data(struct client *c)
+void
+protocol_textline_endclient (struct client *c)
 {
 }
 
-void protocol_textline_free_topic_data(struct topic *t)
+void
+protocol_textline_free_client_data (struct client *c)
 {
 }
 
-void protocol_textline(int argc, char *argv[])
+void
+protocol_textline_free_topic_data (struct topic *t)
+{
+}
+
+void
+protocol_textline (int argc, char *argv[])
 {
   server_read = protocol_textline_read;
   server_write = protocol_textline_write;
