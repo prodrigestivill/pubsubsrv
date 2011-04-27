@@ -169,11 +169,11 @@ server_send (struct client *from, struct topic *to, char buf[], int len)
 }
 
 void
-server_close_client (struct client *s)
+server_close_client (struct client *cli)
 {
-  server_endclient (s->client);
-  server_close (s->client->connection);
-  remove_client (s->client);
+  server_endclient (cli);
+  server_close (cli->connection);
+  remove_client (cli);
 }
 
 void
