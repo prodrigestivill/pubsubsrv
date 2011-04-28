@@ -60,6 +60,22 @@ protocol_irc_get_topic (struct client *from, char *name, int len)
   return 0;
 }
 
+int
+protocol_irc_is_topic(char firstchar)
+{
+	switch (firstchar){
+		case '#':
+		case '&':
+		case '!':
+		case '+':
+		case '.':
+		case '~':
+			return true;
+		default:
+			return false;
+	}
+}
+
 void
 protocol_irc_input (struct client *from, char buf[], int len)
 {
@@ -76,10 +92,11 @@ protocol_irc_input (struct client *from, char buf[], int len)
     buf[len] = '\0';
   else
     buf[RECV_MAX_LEN - 1] = '\0';
-  if (len > 6 && strncmp ("JOIN #", buf, 6) == 0)
+  if (len > 6 && strncmp ("JOIN ", buf, 5) == 0 && protocol_irc_is_topic(buf[5]))
     {
-      t = get_topic (buf + 6, len - 6);
+      t = get_topic (buf + 5, len - 5);
       s = subscriber (from, t);
+      //TODO: Send a message to all presents
       s->state = 1;
       //Moderate?
       p = publisher (from, t);
@@ -95,9 +112,9 @@ protocol_irc_input (struct client *from, char buf[], int len)
       for (r = 9; r < len; r++)
 	if (buf[r] == ' ' || buf[r] == ':')
 	  break;
-      if (buf[8] == '#')
+      if (protocol_irc_is_topic(buf[8]))
 	{
-	  t = protocol_irc_get_topic (from, &buf[9], r - 9);
+	  t = protocol_irc_get_topic (from, &buf[8], r - 8);
 	  if (t != 0)
 	    server_send (from, t, buf2, strlen (buf2));
 	}
@@ -120,7 +137,7 @@ protocol_irc_input (struct client *from, char buf[], int len)
 	}
       return;
     }
-  if (len > 5 && strncmp ("NICK ", buf, 5) == 0)
+  if (len > 5 && strncmp ("NICK ", buf, 5) == 0 && !protocol_irc_is_topic(buf[5]))
     {
       if (len - 4 > NICK_MAX_LEN)
 	len = NICK_MAX_LEN + 4;
@@ -143,18 +160,16 @@ protocol_irc_input (struct client *from, char buf[], int len)
       from->state = 1;
       return;
     }
-  /*
-     if (len > 3 && strncmp("QUIT", buf, 4)==0){
-     (void) write(from->connection, "221 Bye\r\n", 9);
-     server_close_client(from);
-     return;
-     }
-     r = write(from->connection, ": Command not implemented\r\n", 27);
-     if (r<0){
-     server_close_client(from);
-     return;
-     }
-   */
+    if (len > 3 && strncmp("QUIT", buf, 4)==0){
+    (void) write(from->connection, "221 Bye\r\n", 9);
+    server_close_client(from);
+    return;
+    }
+    r = write(from->connection, ": Command not implemented\r\n", 27);
+    if (r<0){
+    server_close_client(from);
+    return;
+    }
 }
 
 int
@@ -214,6 +229,7 @@ protocol_irc_newclient (int fd)
 void
 protocol_irc_endclient (struct client *c)
 {
+//TODO send PART messages to all subscriptions
 }
 
 void
@@ -236,4 +252,5 @@ protocol_irc (int argc, char *argv[])
   server_endclient = protocol_irc_endclient;
   free_client_data = protocol_irc_free_client_data;
   free_topic_data = protocol_irc_free_topic_data;
+  //TODO Register an alert to send PING to clients
 }
