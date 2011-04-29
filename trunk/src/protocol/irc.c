@@ -70,9 +70,9 @@ protocol_irc_is_topic(char firstchar)
 		case '+':
 		case '.':
 		case '~':
-			return true;
+			return 1;
 		default:
-			return false;
+			return 0;
 	}
 }
 
