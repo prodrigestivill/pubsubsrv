@@ -199,7 +199,7 @@ protocol_smtp_newclient (int fd)
   if (r < 0)
     {
       server_close_client (from);
-      return;
+      return NULL;
     }
   return from;
 }

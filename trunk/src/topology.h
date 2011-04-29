@@ -75,6 +75,8 @@ void unsubscriber(struct subscriber *s);
 void unpublisher(struct publisher *p);
 void remove_client(struct client *c);
 void remove_client_fd(int s);
+void remove_topic(struct topic *t);
+
 
 void (*free_client_data) (struct client *);     //client
 void (*free_topic_data) (struct topic *);       //toppic
