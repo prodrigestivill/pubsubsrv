@@ -163,7 +163,7 @@ server_send (struct client *from, struct topic *to, char buf[], int len)
     if (s->state > 0)
       {
 	if (server_write (to, from, s->client, buf, len) < 0)
-	  server_close_client (s);
+	  server_close_client (s->client);
       }
   }
 }
