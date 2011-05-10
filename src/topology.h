@@ -85,6 +85,8 @@ void (*free_topic_data) (struct topic *);       //toppic
 	list_for_each_entry(pos, head, item)
 #define topic_list_for_each(pos, head) \
 	list_for_each_entry(pos, head, topicitem)
+#define topic_list_for_each_safe(pos, n, head) \
+	list_for_each_entry_safe(pos, n, head, topicitem)
 #define client_list_for_each(pos, head) \
 	list_for_each_entry(pos, head, clientitem)
 
