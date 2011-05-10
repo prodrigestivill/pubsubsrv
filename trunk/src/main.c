@@ -90,6 +90,7 @@ int main(int argc, char *argv[])
       usage(programName);
       return 0;
     }
+  signal(SIGPIPE, SIG_IGN);
   signal(SIGINT, sig_int_handler);
   signal(SIGTERM, sig_int_handler);
   switch (protocol)

@@ -221,4 +221,9 @@ static inline void list_splice_init(struct list_head *list,
 	     &pos->member != (head); 					\
 	     pos = list_entry(pos->member.next, typeof(*pos), member))	\
 
+#define list_for_each_entry_safe(pos, n, head, member)			\
+	for (pos = list_entry((head)->next, typeof(*pos), member), n=(pos->member.next);	\
+	     &pos->member != (head); 					\
+	     pos = list_entry(n, typeof(*pos), member))	\
+
 #endif

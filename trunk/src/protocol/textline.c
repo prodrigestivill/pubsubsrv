@@ -144,11 +144,11 @@ int protocol_textline_write
   int r;
   if (from != to)
     {
-      r = write (to->connection, buf, len);
+      r = send (to->connection, buf, len, 0);
+      if (r == -1)
+	return r;
       if (r == len)
 	return 1;
-      if (r < 0)
-	return r;
     }
   return 0;
 }

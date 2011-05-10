@@ -1,7 +1,10 @@
 /* -*- Mode: C; indent-tabs-mode: t; c-basic-offset: 4; tab-width: 4 -*- */
 /*
  * server.c
- * Copyright (C) Pau Rodriguez 2009 <prodrigestivill@gmail.com>
+ * Copyright (C) Pau Rodriguez 2009-2011
+ *   <prodrigestivill@gmail.com>
+ * Contribs:
+ *   <pancake@nopcode.org>
  * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -158,7 +161,8 @@ void
 server_send (struct client *from, struct topic *to, char buf[], int len)
 {
   struct subscriber *s;
-  topic_list_for_each (s, &to->subscribers)
+  struct list_head *n;
+  topic_list_for_each_safe (s, n, &to->subscribers)
   {
     if (s->state > 0)
       {
