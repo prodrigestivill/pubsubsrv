@@ -129,11 +129,14 @@ protocol_textline_read (struct client *c)
 	  n++;
 	}
     }
+#if 0
+  /* handle lines without newlines */
   if (l < len)
     {
       protocol_textline_input (c, &buf[l], len - l);
       n++;
     }
+#endif
   return n;
 }
 
