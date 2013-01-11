@@ -1,4 +1,4 @@
 CC?=gcc
-CFLAGS?=-g
+CFLAGS?=-g -Wall
 PREFIX?=/usr
 DESTDIR=

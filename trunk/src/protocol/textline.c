@@ -38,7 +38,7 @@ protocol_textline_get_topic (struct client *from, char *name, int len)
   return 0;
 }
 
-void
+int
 protocol_textline_input (struct client *from, char buf[], int len)
 {
   struct subscriber *s;
@@ -53,7 +53,7 @@ protocol_textline_input (struct client *from, char buf[], int len)
 	len--;
       s = subscriber (from, get_topic (buf + 10, len - 10));
       s->state = 1;
-      return;
+      return 0;
     }
   if (len > 8 && strncmp ("PUBLISH ", buf, 8) == 0)
     {
@@ -62,12 +62,11 @@ protocol_textline_input (struct client *from, char buf[], int len)
 	len--;
       p = publisher (from, get_topic (buf + 8, len - 8));
       p->state = 1;
-      return;
+      return 0;
     }
   if (len > 3 && strncmp ("QUIT", buf, 4) == 0)
     {
-      server_close_client (from);
-      return;
+      return -1;
     }
   for (l = 0; l < len; l++)
     if (buf[l] == '>')
@@ -94,20 +93,19 @@ protocol_textline_input (struct client *from, char buf[], int len)
   else
     {
       t = protocol_textline_get_topic (from, buf, l);
-      if (t != 0)
+      if (t)
 	server_send (from, t, buf, len);
+#if PRINT_ERROR_TO_CLIENT
       else
 	{
-	  r =
 	    write (from->connection, "ERR: Topic not set for publishing.\r\n",
 		   36);
 	  if (r < 0)
-	    {
-	      server_close_client (from);
-	      return;
-	    }
+	      return -1;
 	}
+#endif
     }
+    return 0;
 }
 
 int
@@ -124,7 +122,8 @@ protocol_textline_read (struct client *c)
     {
       if (buf[i] == '\n')
 	{
-	  protocol_textline_input (c, &buf[l], i - l + 1);
+	  if (protocol_textline_input (c, &buf[l], i - l + 1)<0)
+		return -1;
 	  l = i + 1;
 	  n++;
 	}
